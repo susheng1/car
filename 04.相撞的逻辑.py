@@ -24,6 +24,8 @@ class Stone:
     def move(self):
         self.y += 5
         if self.y>WINDOW_HEIGHT:
+            global score
+            score += 10
             self.reset()
 
     def reset(self):
@@ -63,7 +65,19 @@ if __name__ == '__main__':
     pygame.init()
     window = pygame.display.set_mode((WINDOW_WIDTH,WINDOW_HEIGHT))
 
+    # 背景音乐
+    pygame.mixer_music.load('snd/bg2.ogg')
+    pygame.mixer_music.play(-1)
+
     font = pygame.font.Font('font/happy.ttf',24)
+    # 渲染游戏结束
+    is_over = False
+    font_finish = pygame.font.Font('font/happy.ttf',48)
+    text_finish = font_finish.render('游戏结束', True, (255, 0, 0))
+    finish_width = text_finish.get_width()
+    finish_height = text_finish.get_height()
+    finish_x = (WINDOW_WIDTH-finish_width)/2
+    finish_y = (WINDOW_HEIGHT-finish_height)/2
 
     # 玩家车辆
     # car = pygame.image.load('img/car.png')
@@ -80,7 +94,7 @@ if __name__ == '__main__':
     points3 = [(WINDOW_WIDTH-DEFAULT_OFFICE, 0), (WINDOW_WIDTH-DEFAULT_OFFICE, WINDOW_HEIGHT)]
 
     fps = 0
-
+    score = 0
 
     while True:
 
@@ -91,19 +105,37 @@ if __name__ == '__main__':
         # 渲染fps
         text = font.render('FPS:%d' % fps, True, (255, 255, 0))
         window.blit(text, (300, 10))
+        # 渲染积分
+        text = font.render('积分:%d' % score, True, (255, 255, 0))
+        window.blit(text, (10, 10))
 
         # 渲染竖线
         pygame.draw.lines(window, (0, 255, 0), 0, points1, 1)
         pygame.draw.lines(window, (0, 255, 0), 0, points2, 1)
         pygame.draw.lines(window, (0, 255, 0), 0, points3, 1)
 
-        # 显示车辆
-        # window.blit(car, (x, y))
-        car.display()
-        #显示障碍物
-        for stone in stones:
-            stone.display()
-            stone.move()
+        if is_over:
+            window.blit(text_finish, (finish_x, finish_y))
+
+        # 游戏没结束才会显示小车和石头
+        if not is_over:
+            # 显示小车
+            # window.blit(car, (x, y))
+            car.display()
+
+            # 相撞的逻辑
+            car_rect = pygame.Rect(car.x, car.y, car.width, car.height)
+            #显示障碍物
+            for stone in stones:
+                stone.display()
+                stone.move()
+                stone_rect = pygame.Rect(stone.x,stone.y,stone.width,stone.height)
+                colliderect = pygame.Rect.colliderect(stone_rect, car_rect)
+                if colliderect:
+                    print('game over-----------------')
+                    is_over = True
+
+
         # 渲染
         pygame.display.flip()
         events = pygame.event.get()
@@ -113,11 +145,18 @@ if __name__ == '__main__':
                 sys.exit(0)
             if e.type == KEYDOWN:
                 if e.key == K_LEFT:
-                    print('left')
                     car.move_left()
                 if e.key == K_RIGHT:
-                    print('right')
                     car.move_right()
+                if e.key == K_p:
+                    pygame.mixer_music.play(-1)
+                if e.key == K_l:
+                    pygame.mixer_music.stop()
+                if e.key == K_RETURN and is_over:
+                    is_over = False
+                    stone.reset()
+                    score = 0
+
 
         end = time.time()
         cost = end - start
